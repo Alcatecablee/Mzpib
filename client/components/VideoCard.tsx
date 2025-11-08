@@ -1,6 +1,7 @@
 import { Video } from "@shared/api";
 import { Play } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 
 interface VideoCardProps {
   video: Video;
@@ -8,6 +9,43 @@ interface VideoCardProps {
 
 export function VideoCard({ video }: VideoCardProps) {
   const videoLink = `/video/${video.id}`;
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [watchProgress, setWatchProgress] = useState<number>(0);
+
+  // Lazy loading with IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: "50px", // Load slightly before entering viewport
+      }
+    );
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Load watch progress from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(`video-progress-${video.id}`);
+    if (saved) {
+      const data = JSON.parse(saved);
+      const progressPercent = (data.currentTime / video.duration) * 100;
+      setWatchProgress(progressPercent);
+    }
+  }, [video.id, video.duration]);
+
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -42,32 +80,45 @@ export function VideoCard({ video }: VideoCardProps) {
   };
 
   return (
-    <div className="group cursor-pointer">
-      <div className="relative overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800 aspect-video mb-3 shadow-sm hover:shadow-md transition-shadow duration-300">
-        {video.poster || video.thumbnail ? (
-          <img
-            src={video.poster || video.thumbnail}
-            alt={video.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
-            <Play className="w-16 h-16 text-white opacity-30" />
-          </div>
-        )}
+    <Link to={videoLink}>
+      <div className="group cursor-pointer">
+        <div className="relative overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800 aspect-video mb-3 shadow-sm hover:shadow-md transition-shadow duration-300">
+          {video.poster || video.thumbnail ? (
+            <img
+              ref={imgRef}
+              src={isVisible ? (video.poster || video.thumbnail) : undefined}
+              alt={video.title}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${!isVisible ? "bg-gray-300 dark:bg-gray-700" : ""}`}
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
+              <Play className="w-16 h-16 text-white opacity-30" />
+            </div>
+          )}
 
-        {video.duration > 0 && (
-          <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-white text-xs font-semibold">
-            {formatDuration(video.duration)}
-          </div>
-        )}
+          {/* Watch Progress Bar */}
+          {watchProgress > 5 && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${watchProgress}%` }}
+              />
+            </div>
+          )}
 
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
-          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Play className="w-6 h-6 text-white fill-white" />
+          {video.duration > 0 && (
+            <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-white text-xs font-semibold">
+              {formatDuration(video.duration)}
+            </div>
+          )}
+
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <Play className="w-6 h-6 text-white fill-white" />
+            </div>
           </div>
         </div>
-      </div>
 
       <div className="space-y-1.5">
         <h3 className="font-semibold text-sm leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors break-words">
@@ -95,5 +146,6 @@ export function VideoCard({ video }: VideoCardProps) {
         )}
       </div>
     </div>
+    </Link>
   );
 }

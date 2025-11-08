@@ -1,14 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Video } from "@shared/api";
 import { ArrowLeft, Play, Volume2, Maximize } from "lucide-react";
+import { toast } from "sonner";
 
 export default function VideoPlayer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -17,6 +18,7 @@ export default function VideoPlayer() {
         const response = await fetch(`/api/videos/${id}`);
         
         if (!response.ok) {
+          toast.error("Failed to load video");
           throw new Error("Video not found");
         }
         
@@ -34,6 +36,57 @@ export default function VideoPlayer() {
       fetchVideo();
     }
   }, [id, navigate]);
+
+  // Load saved progress and setup progress tracking
+  useEffect(() => {
+    if (!video || !videoRef.current) return;
+
+    const videoElement = videoRef.current;
+
+    // Load saved progress
+    const saved = localStorage.getItem(`video-progress-${video.id}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.currentTime && data.currentTime > 5 && data.currentTime < video.duration - 10) {
+          videoElement.currentTime = data.currentTime;
+          toast.info(`Resuming from ${Math.floor(data.currentTime / 60)}:${String(Math.floor(data.currentTime % 60)).padStart(2, "0")}`);
+        }
+      } catch (e) {
+        console.error("Error loading progress:", e);
+      }
+    }
+
+    // Save progress periodically
+    const saveProgress = () => {
+      if (videoElement.currentTime > 0) {
+        localStorage.setItem(
+          `video-progress-${video.id}`,
+          JSON.stringify({
+            currentTime: videoElement.currentTime,
+            duration: video.duration,
+            lastWatched: new Date().toISOString(),
+          })
+        );
+      }
+    };
+
+    // Save progress every 5 seconds
+    const interval = setInterval(saveProgress, 5000);
+
+    // Save on pause and ended
+    videoElement.addEventListener("pause", saveProgress);
+    videoElement.addEventListener("ended", () => {
+      // Clear progress when video ends
+      localStorage.removeItem(`video-progress-${video.id}`);
+    });
+
+    return () => {
+      clearInterval(interval);
+      saveProgress(); // Save on unmount
+      videoElement.removeEventListener("pause", saveProgress);
+    };
+  }, [video]);
 
   if (loading) {
     return (
@@ -83,6 +136,7 @@ export default function VideoPlayer() {
         <div className="mb-8">
           <div className="relative overflow-hidden rounded-xl bg-black aspect-video mb-6 group">
             <video
+              ref={videoRef}
               src={`/api/videos/${video.id}/stream`}
               controls
               className="w-full h-full"
@@ -90,6 +144,10 @@ export default function VideoPlayer() {
               preload="metadata"
               onError={(e) => {
                 console.error("Video playback error:", e);
+                toast.error("Failed to load video stream");
+              }}
+              onLoadedMetadata={() => {
+                toast.success("Video loaded successfully");
               }}
             >
               Your browser does not support video playback.
