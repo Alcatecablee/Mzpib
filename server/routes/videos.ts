@@ -205,6 +205,7 @@ export const handleGetVideoById: RequestHandler = async (req, res) => {
 };
 
 // Streaming proxy endpoint
+// Returns the video's playable source URL from the poster field
 export const handleVideoStream: RequestHandler = async (req, res) => {
   try {
     if (!API_TOKEN) {
@@ -214,47 +215,32 @@ export const handleVideoStream: RequestHandler = async (req, res) => {
     }
 
     const { id } = req.params;
-    const streamUrl = `${UPNSHARE_API_BASE}/video/${id}/stream`;
 
-    // Forward the stream with authentication
-    const response = await fetch(streamUrl, {
-      headers: {
-        "api-token": API_TOKEN,
-        // Forward range header for seeking support
-        ...(req.headers.range && { Range: req.headers.range }),
-      },
-    });
+    // Check cache first
+    if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
+      const video = cache.data.videos.find((v) => v.id === id);
+      if (video?.poster) {
+        return res.redirect(video.poster);
+      }
+    }
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: `Failed to stream video: ${response.statusText}`,
+    // Fetch video details from API
+    const videoData = await fetchWithAuth(
+      `${UPNSHARE_API_BASE}/video/manage/${id}`,
+    );
+
+    if (!videoData?.poster) {
+      return res.status(404).json({
+        error: "Video source not available",
       });
     }
 
-    // Forward response headers
-    res.status(response.status);
-    response.headers.forEach((value, key) => {
-      res.setHeader(key, value);
-    });
-
-    // Stream the video data
-    if (response.body) {
-      const reader = response.body.getReader();
-      const pump = async () => {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          return;
-        }
-        res.write(value);
-        pump();
-      };
-      await pump();
-    }
+    // Redirect to the poster URL which is the actual video source
+    res.redirect(videoData.poster);
   } catch (error) {
-    console.error(`Error streaming video ${req.params.id}:`, error);
+    console.error(`Error getting video stream ${req.params.id}:`, error);
     res.status(500).json({
-      error: "Failed to stream video",
+      error: error instanceof Error ? error.message : "Failed to get video stream",
     });
   }
 };
