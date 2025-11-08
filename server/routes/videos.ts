@@ -23,11 +23,11 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export const handleGetVideos: RequestHandler = async (req, res) => {
   const startTime = Date.now();
-  const GLOBAL_TIMEOUT = 25000; // 25 seconds - leave 5s buffer before Vercel's 30s limit
+  const GLOBAL_TIMEOUT = 20000; // 20 seconds - be conservative to avoid Vercel's 30s limit
 
   try {
     performanceMonitor.recordRequest();
-    
+
     console.log("[handleGetVideos] Starting request");
     console.log("[handleGetVideos] API_TOKEN present:", !!API_TOKEN);
     console.log(
