@@ -35,9 +35,21 @@ export default function Index() {
       const response = await fetch("/api/videos");
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage =
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Response is not JSON, try to read as text
+          try {
+            const text = await response.text();
+            if (text) {
+              errorMessage = text.substring(0, 200);
+            }
+          } catch {
+            // Fallback to status message
+          }
+        }
         throw new Error(errorMessage);
       }
 
