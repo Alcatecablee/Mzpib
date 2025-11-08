@@ -8,10 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   build: {
     lib: {
-      entry: path.resolve(__dirname, "server/index.ts"),
+      entry: path.resolve(__dirname, "server/serverless.ts"),
       name: "api",
-      fileName: "serverless",
-      formats: ["es"],
+      fileName: "index",
+      formats: ["cjs"],
     },
     outDir: "dist/api",
     target: "node22",
@@ -35,15 +35,17 @@ export default defineConfig({
         "zlib",
         "net",
         "tls",
-        // External dependencies that should not be bundled
+        "dns",
+        // External dependencies - let Vercel bundle these
         "express",
         "cors",
         "dotenv",
         "serverless-http",
       ],
       output: {
-        format: "es",
-        entryFileNames: "[name].mjs",
+        format: "cjs",
+        entryFileNames: "[name].cjs",
+        exports: "default",
       },
     },
     minify: false,

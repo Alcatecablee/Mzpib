@@ -8,10 +8,9 @@
     }
   ],
   "functions": {
-    "api/index.js": {
+    "api/index.ts": {
       "memory": 1024,
-      "maxDuration": 10,
-      "includeFiles": "dist/api/**"
+      "maxDuration": 30
     }
   }
 }
