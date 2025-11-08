@@ -114,32 +114,42 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
         });
       }
 
-      // Fetch ALL videos from all folders in parallel
-      console.log(`Fetching all videos from ${folders.length} folders in parallel...`);
-      const folderPromises = folders.map(async (folder) => {
+      // Fetch ALL videos from all folders with limited concurrency
+      console.log(`Fetching all videos from ${folders.length} folders...`);
+      const MAX_CONCURRENT = 3; // Limit concurrent requests to prevent overwhelming the API
+
+      const folderPromises = folders.map(async (folder, index) => {
         const folderStartTime = Date.now();
         try {
           // Check if we're running out of time
-          if (Date.now() - startTime > GLOBAL_TIMEOUT - 5000) {
-            console.log(`⏭️  Skipping ${folder.name} - running out of time`);
+          const timeRemaining = GLOBAL_TIMEOUT - (Date.now() - startTime);
+          if (timeRemaining < 5000) {
+            console.log(`⏭️  Skipping ${folder.name} - running out of time (${timeRemaining}ms remaining)`);
             return [];
           }
 
+          // Implement concurrency limiting: add a delay based on batch position
+          const batchIndex = Math.floor(index / MAX_CONCURRENT);
+          const delayMs = batchIndex * 100; // Small stagger between batches
+          if (delayMs > 0) {
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+
           const result = await fetchAllVideosFromFolder(folder.id);
-          
+
           const folderDuration = Date.now() - folderStartTime;
           performanceMonitor.recordFolderFetch(folder.id, folder.name, folderDuration);
-          
+
           if (result.error) {
             console.warn(`  ⚠️  Partial data from ${folder.name}: ${result.error}`);
           }
-          
+
           console.log(`  ✓ Found ${result.videos.length} videos in ${folder.name} (${folderDuration}ms)`);
-          
+
           return result.videos.map((video: any) => normalizeVideo(video, folder.id));
         } catch (error) {
           const folderDuration = Date.now() - folderStartTime;
-          
+
           if (error instanceof Error && error.message.includes('timeout')) {
             performanceMonitor.recordTimeout();
             console.error(`  ⏱️  Timeout fetching ${folder.name} after ${folderDuration}ms`);
@@ -147,13 +157,21 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
             performanceMonitor.recordError(`folder_fetch_${folder.id}`);
             console.error(`  ❌ Error fetching ${folder.name}:`, error);
           }
-          
+
           return []; // Return empty array on error, don't fail entire request
         }
       });
 
-      // Wait for all folder requests to complete
-      const videoArrays = await Promise.all(folderPromises);
+      // Wait for all folder requests to complete with timeout protection
+      const videoArrays = await Promise.race([
+        Promise.all(folderPromises),
+        new Promise<any[]>((_, reject) =>
+          setTimeout(() => reject(new Error('Folder fetch timeout')), GLOBAL_TIMEOUT - 2000)
+        )
+      ]).catch(() => {
+        console.warn("Folder fetch race condition timeout, returning partial results");
+        return folderPromises.map(() => []);
+      });
       
       // Flatten all videos into single array
       for (const videos of videoArrays) {
