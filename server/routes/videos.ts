@@ -33,6 +33,12 @@ async function fetchWithAuth(url: string) {
 
 // Normalize video metadata
 function normalizeVideo(video: any, folderId: string): Video {
+  // Log the first video to understand the data structure
+  if (!loggedFirst) {
+    loggedFirst = true;
+    console.log("Sample video from API:", JSON.stringify(video, null, 2));
+  }
+
   return {
     id: video.id,
     title: (video.title || video.name || `Video ${video.id}`).trim(),
@@ -40,13 +46,15 @@ function normalizeVideo(video: any, folderId: string): Video {
     duration: video.duration || 0,
     thumbnail: video.thumbnail || undefined,
     poster: video.poster || video.thumbnail || undefined,
-    created_at: video.created_at || undefined,
-    updated_at: video.updated_at || undefined,
-    views: video.views || 0,
+    created_at: video.created_at || video.createdAt || undefined,
+    updated_at: video.updated_at || video.updatedAt || undefined,
+    views: video.views || video.play || 0,
     size: video.size || undefined,
     folder_id: folderId,
   };
 }
+
+let loggedFirst = false;
 
 // Fetch all videos from a folder with pagination
 async function fetchAllVideosFromFolder(
