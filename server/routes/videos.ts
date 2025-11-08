@@ -81,6 +81,9 @@ async function fetchAllVideosFromFolder(
       }
 
       page++;
+
+      // Add delay between page requests to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 300));
     }
 
     return { videos: allVideos };
