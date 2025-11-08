@@ -25,6 +25,7 @@ export interface Video {
   updated_at?: string;
   views?: number;
   size?: number;
+  folder_id?: string;
 }
 
 /**
