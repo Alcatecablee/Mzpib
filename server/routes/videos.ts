@@ -211,7 +211,11 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
     console.log(`Total videos fetched: ${allVideos.length}`);
     res.json(response);
   } catch (error) {
-    console.error("Error fetching videos from UPNshare:", error);
+    console.error("[handleGetVideos] Error fetching videos from UPNshare:", error);
+    if (error instanceof Error) {
+      console.error("[handleGetVideos] Error message:", error.message);
+      console.error("[handleGetVideos] Error stack:", error.stack);
+    }
     res.status(500).json({
       error:
         error instanceof Error
