@@ -67,8 +67,8 @@ export function VideoCard({ video }: VideoCardProps) {
         </div>
       </div>
 
-      <div className="space-y-2 px-0">
-        <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+      <div className="space-y-1.5">
+        <h3 className="font-semibold text-sm leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors break-words">
           {video.title}
         </h3>
 
