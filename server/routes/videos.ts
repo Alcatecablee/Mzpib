@@ -5,8 +5,10 @@ const UPNSHARE_API_BASE = "https://upnshare.com/api/v1";
 const API_TOKEN = process.env.UPNSHARE_API_TOKEN || "";
 
 async function fetchWithAuth(url: string) {
+  const separator = url.includes("?") ? "&" : "?";
+
   // Try with api_token query parameter (most common for UPNshare)
-  let response = await fetch(`${url}?api_token=${API_TOKEN}`, {
+  let response = await fetch(`${url}${separator}api_token=${API_TOKEN}`, {
     headers: {
       "Content-Type": "application/json",
     },
