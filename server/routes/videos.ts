@@ -204,8 +204,47 @@ export const handleGetVideoById: RequestHandler = async (req, res) => {
   }
 };
 
-// Streaming proxy endpoint
+// Get video stream URL endpoint
 // Returns the video's playable source URL from the poster field
+export const handleGetStreamUrl: RequestHandler = async (req, res) => {
+  try {
+    if (!API_TOKEN) {
+      return res.status(500).json({
+        error: "UPNSHARE_API_TOKEN environment variable is not set",
+      });
+    }
+
+    const { id } = req.params;
+
+    // Check cache first
+    if (cache && Date.now() - cache.timestamp < CACHE_TTL) {
+      const video = cache.data.videos.find((v) => v.id === id);
+      if (video?.poster) {
+        return res.json({ url: video.poster });
+      }
+    }
+
+    // Fetch video details from API
+    const videoData = await fetchWithAuth(
+      `${UPNSHARE_API_BASE}/video/manage/${id}`,
+    );
+
+    if (!videoData?.poster) {
+      return res.status(404).json({
+        error: "Video source not available",
+      });
+    }
+
+    res.json({ url: videoData.poster });
+  } catch (error) {
+    console.error(`Error getting video stream URL ${req.params.id}:`, error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : "Failed to get video stream URL",
+    });
+  }
+};
+
+// Streaming proxy endpoint - redirects to the actual video source
 export const handleVideoStream: RequestHandler = async (req, res) => {
   try {
     if (!API_TOKEN) {
@@ -238,9 +277,9 @@ export const handleVideoStream: RequestHandler = async (req, res) => {
     // Redirect to the poster URL which is the actual video source
     res.redirect(videoData.poster);
   } catch (error) {
-    console.error(`Error getting video stream ${req.params.id}:`, error);
+    console.error(`Error streaming video ${req.params.id}:`, error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : "Failed to get video stream",
+      error: error instanceof Error ? error.message : "Failed to stream video",
     });
   }
 };
