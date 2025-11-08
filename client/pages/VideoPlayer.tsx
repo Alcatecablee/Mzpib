@@ -86,33 +86,13 @@ export default function VideoPlayer() {
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-8">
           <div className="relative overflow-hidden rounded-xl bg-black aspect-video mb-6 group">
-            {streamError ? (
-              <div className="flex items-center justify-center h-full bg-slate-900">
-                <div className="text-center text-white">
-                  <div className="mb-4 inline-flex items-center justify-center w-12 h-12 bg-red-500/20 rounded-lg">
-                    <AlertCircle className="w-6 h-6 text-red-500" />
-                  </div>
-                  <p className="font-semibold mb-2">{streamError}</p>
-                  <button
-                    onClick={() => {
-                      setStreamError(null);
-                      window.location.reload();
-                    }}
-                    className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <iframe
-                src={`https://upnshare.com/embed/${video.id}`}
-                className="w-full h-full"
-                allowFullScreen
-                allow="autoplay; encrypted-media"
-                title={video.title}
-              />
-            )}
+            <iframe
+              src={`https://pib.upns.xyz/#${video.id}`}
+              className="w-full h-full"
+              allowFullScreen
+              allow="autoplay; encrypted-media"
+              title={video.title}
+            />
           </div>
 
           <div className="space-y-6">
