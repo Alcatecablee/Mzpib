@@ -132,7 +132,12 @@ async function fetchAllVideosFromFolder(
 
 export const handleGetVideos: RequestHandler = async (req, res) => {
   try {
+    console.log("[handleGetVideos] Starting request");
+    console.log("[handleGetVideos] API_TOKEN present:", !!API_TOKEN);
+    console.log("[handleGetVideos] API_TOKEN value:", API_TOKEN ? API_TOKEN.substring(0, 5) + "..." : "NOT SET");
+
     if (!API_TOKEN) {
+      console.error("[handleGetVideos] API_TOKEN is not set in environment");
       return res.status(500).json({
         error: "UPNSHARE_API_TOKEN environment variable is not set",
       });
