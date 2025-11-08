@@ -39,6 +39,9 @@ function normalizeVideo(video: any, folderId: string): Video {
     console.log("Sample video from API:", JSON.stringify(video, null, 2));
   }
 
+  // Extract asset path from poster (e.g., "/Kt5MSAs88.../poster.png" -> "/Kt5MSAs88...")
+  const posterPath = video.poster ? video.poster.replace(/\/[^/]*$/, "") : undefined;
+
   return {
     id: video.id,
     title: (video.title || video.name || `Video ${video.id}`).trim(),
@@ -46,6 +49,8 @@ function normalizeVideo(video: any, folderId: string): Video {
     duration: video.duration || 0,
     thumbnail: video.thumbnail || undefined,
     poster: video.poster || video.thumbnail || undefined,
+    assetUrl: video.assetUrl || "https://assets.upns.net",
+    assetPath: posterPath,
     created_at: video.created_at || video.createdAt || undefined,
     updated_at: video.updated_at || video.updatedAt || undefined,
     views: video.views || video.play || 0,
