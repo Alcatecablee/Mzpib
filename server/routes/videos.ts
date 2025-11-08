@@ -13,28 +13,43 @@ interface CacheEntry {
 let cache: CacheEntry | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-async function fetchWithAuth(url: string) {
+async function fetchWithAuth(url: string, timeoutMs = 10000) {
   // UPNshare uses api-token header (with hyphen, not underscore)
   console.log(`[fetchWithAuth] Fetching: ${url}`);
-  const response = await fetch(url, {
-    headers: {
-      "api-token": API_TOKEN,
-      "Content-Type": "application/json",
-    },
-  });
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "api-token": API_TOKEN,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(
-      `[fetchWithAuth] API error: ${response.status} ${response.statusText}`,
-    );
-    console.error(`[fetchWithAuth] Error response body:`, errorText);
-    throw new Error(
-      `UPNshare API error: ${response.status} ${response.statusText}`,
-    );
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(
+        `[fetchWithAuth] API error: ${response.status} ${response.statusText}`,
+      );
+      console.error(`[fetchWithAuth] Error response body:`, errorText);
+      throw new Error(
+        `UPNshare API error: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // Normalize video metadata
@@ -173,7 +188,11 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
 
     console.log(`Found ${folders.length} folders`);
 
-    // Fetch videos from all folders with pagination
+    // Fetch only first page of videos from each folder (limit 20 per folder for speed)
+    const MAX_VIDEOS_PER_FOLDER = 20;
+    const TIMEOUT_PER_FOLDER = 8000; // 8 seconds per folder request
+    
+    // Process folders and prepare folder metadata
     for (const folder of folders) {
       allFolders.push({
         id: folder.id,
@@ -183,22 +202,31 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
         created_at: folder.created_at,
         updated_at: folder.updated_at,
       });
+    }
 
-      console.log(`Fetching videos from folder: ${folder.name} (${folder.id})`);
-      const { videos, error } = await fetchAllVideosFromFolder(folder.id);
-
-      if (error) {
-        console.error(`Error in folder ${folder.name}:`, error);
+    // Fetch videos from all folders in parallel for much faster response
+    console.log(`Fetching videos from ${folders.length} folders in parallel...`);
+    const folderPromises = folders.map(async (folder) => {
+      try {
+        const url = `${UPNSHARE_API_BASE}/video/folder/${folder.id}?page=1&perPage=${MAX_VIDEOS_PER_FOLDER}`;
+        const response = await fetchWithAuth(url, TIMEOUT_PER_FOLDER);
+        const videos = Array.isArray(response) ? response : response.data || [];
+        
+        console.log(`  Found ${videos.length} videos in ${folder.name}`);
+        
+        return videos.map((video: any) => normalizeVideo(video, folder.id));
+      } catch (error) {
+        console.error(`Error fetching folder ${folder.name}:`, error);
+        return []; // Return empty array on error, don't fail entire request
       }
+    });
 
-      console.log(`  Found ${videos.length} videos in ${folder.name}`);
-
-      for (const video of videos) {
-        allVideos.push(normalizeVideo(video, folder.id));
-      }
-
-      // Add delay between folder requests to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    // Wait for all folder requests to complete
+    const videoArrays = await Promise.all(folderPromises);
+    
+    // Flatten all videos into single array
+    for (const videos of videoArrays) {
+      allVideos.push(...videos);
     }
 
     const response: VideosResponse = {
