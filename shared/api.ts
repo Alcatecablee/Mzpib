@@ -21,6 +21,7 @@ export interface Video {
   duration: number;
   thumbnail?: string;
   poster?: string;
+  preview?: string;
   assetUrl?: string;
   assetPath?: string;
   created_at?: string;
@@ -28,6 +29,9 @@ export interface Video {
   views?: number;
   size?: number;
   folder_id?: string;
+  width?: number;
+  height?: number;
+  tags?: string[];
 }
 
 /**

@@ -1,7 +1,7 @@
 import { Video, VideoFolder } from "@shared/api";
 import { Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { Folder } from "lucide-react";
+import { Folder, Tag } from "lucide-react";
 
 interface VideoCardProps {
   video: Video;
@@ -13,6 +13,8 @@ export function VideoCard({ video, folder }: VideoCardProps) {
   const [isVisible, setIsVisible] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
   const [watchProgress, setWatchProgress] = useState<number>(0);
+  const [isHovering, setIsHovering] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -42,6 +44,29 @@ export function VideoCard({ video, folder }: VideoCardProps) {
       setWatchProgress(progressPercent);
     }
   }, [video.id, video.duration]);
+
+  const handleMouseEnter = () => {
+    if (video.preview) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setIsHovering(true);
+      }, 500);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHovering(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -82,14 +107,21 @@ export function VideoCard({ video, folder }: VideoCardProps) {
       <div 
         ref={imgRef}
         className="relative w-full aspect-video rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-800 mb-3"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {(video.poster || video.thumbnail) && isVisible ? (
-          <img
-            src={video.poster || video.thumbnail}
-            alt={video.title}
-            className="w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-105"
-            loading="lazy"
-          />
+          <>
+            <img
+              src={isHovering && video.preview ? video.preview : (video.poster || video.thumbnail)}
+              alt={video.title}
+              className="w-full h-full object-cover transition-all duration-300 ease-out group-hover:scale-105"
+              loading="lazy"
+            />
+            {isHovering && video.preview && (
+              <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+            )}
+          </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-700 dark:to-gray-800" />
         )}
@@ -143,6 +175,26 @@ export function VideoCard({ video, folder }: VideoCardProps) {
               </>
             )}
           </div>
+
+          {/* Tags */}
+          {video.tags && video.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {video.tags.slice(0, 2).map((tag, index) => (
+                <span 
+                  key={index}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
+                >
+                  <Tag className="w-2.5 h-2.5" />
+                  {tag}
+                </span>
+              ))}
+              {video.tags.length > 2 && (
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-400">
+                  +{video.tags.length - 2}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Link>

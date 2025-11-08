@@ -44,7 +44,7 @@ export async function fetchWithAuth(url: string, timeoutMs = 10000) {
 
 let loggedFirst = false;
 
-export function normalizeVideo(video: any, folderId: string): Video {
+export function normalizeVideo(video: any, folderId: string, folderName?: string): Video {
   if (!loggedFirst) {
     loggedFirst = true;
     console.log("Sample video from API:", JSON.stringify(video, null, 2));
@@ -52,6 +52,7 @@ export function normalizeVideo(video: any, folderId: string): Video {
 
   let assetPath: string | undefined;
   let posterUrl: string | undefined;
+  let previewUrl: string | undefined;
 
   if (video.poster) {
     const assetUrl = video.assetUrl || "https://assets.upns.net";
@@ -70,6 +71,20 @@ export function normalizeVideo(video: any, folderId: string): Video {
     }
   }
 
+  if (video.preview) {
+    const assetUrl = video.assetUrl || "https://assets.upns.net";
+    if (video.preview.startsWith("/")) {
+      previewUrl = assetUrl + video.preview;
+    } else if (video.preview.startsWith("http")) {
+      previewUrl = video.preview;
+    }
+  }
+
+  const tags: string[] = [];
+  if (folderName) {
+    tags.push(folderName);
+  }
+
   return {
     id: video.id,
     title: (video.title || video.name || `Video ${video.id}`).trim(),
@@ -77,6 +92,7 @@ export function normalizeVideo(video: any, folderId: string): Video {
     duration: video.duration || 0,
     thumbnail: video.thumbnail || undefined,
     poster: posterUrl || video.thumbnail || undefined,
+    preview: previewUrl,
     assetUrl: video.assetUrl || "https://assets.upns.net",
     assetPath: assetPath,
     created_at: video.created_at || video.createdAt || undefined,
@@ -84,6 +100,9 @@ export function normalizeVideo(video: any, folderId: string): Video {
     views: video.views || video.play || 0,
     size: video.size || undefined,
     folder_id: folderId,
+    width: video.width || undefined,
+    height: video.height || undefined,
+    tags: tags.length > 0 ? tags : undefined,
   };
 }
 

@@ -167,7 +167,7 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
           );
 
           return result.videos.map((video: any) =>
-            normalizeVideo(video, folder.id),
+            normalizeVideo(video, folder.id, folder.name),
           );
         } catch (error) {
           const folderDuration = Date.now() - folderStartTime;
@@ -419,7 +419,7 @@ export const handleGetVideosPaginated: RequestHandler = async (req, res) => {
         }
 
         return result.videos.map((video: any) =>
-          normalizeVideo(video, folder.id),
+          normalizeVideo(video, folder.id, folder.name),
         );
       } catch (error) {
         if (error instanceof Error && error.message.includes("timeout")) {
@@ -485,7 +485,7 @@ export const handleGetVideoById: RequestHandler = async (req, res) => {
       `${UPNSHARE_API_BASE}/video/manage/${id}`,
     );
 
-    const video: Video = normalizeVideo(videoData, videoData.folder_id || "");
+    const video: Video = normalizeVideo(videoData, videoData.folder_id || "", videoData.folder_name);
 
     res.json(video);
   } catch (error) {
@@ -538,7 +538,7 @@ export const handleHlsProxy: RequestHandler = async (req, res) => {
       const videoData = await fetchWithAuth(
         `${UPNSHARE_API_BASE}/video/manage/${id}`,
       );
-      video = normalizeVideo(videoData, videoData.folder_id || "");
+      video = normalizeVideo(videoData, videoData.folder_id || "", videoData.folder_name);
     }
 
     if (!video?.assetUrl || !video?.assetPath) {
