@@ -41,8 +41,11 @@ export function createServer() {
   app.post("/api/refresh/now", handleRefreshNow);
   app.get("/api/refresh/status", handleRefreshStatus);
 
-  // Start background refresh on server startup
-  startBackgroundRefresh();
+  // Start background refresh on server startup (non-blocking)
+  // Schedule it to run after a short delay to not interfere with first request
+  setTimeout(() => {
+    startBackgroundRefresh();
+  }, 1000);
 
   return app;
 }
