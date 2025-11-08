@@ -4,11 +4,14 @@ import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import {
   handleGetVideos,
+  handleGetVideosPaginated,
   handleGetVideoById,
   handleGetStreamUrl,
   handleVideoStream,
   handleHlsProxy,
 } from "./routes/videos";
+import { handleRefreshNow, handleRefreshStatus } from "./routes/refresh";
+import { startBackgroundRefresh } from "./utils/background-refresh";
 
 export function createServer() {
   const app = express();
@@ -28,10 +31,18 @@ export function createServer() {
 
   // Video routes
   app.get("/api/videos", handleGetVideos);
+  app.get("/api/videos/paginated", handleGetVideosPaginated);
   app.get("/api/videos/:id", handleGetVideoById);
   app.get("/api/videos/:id/stream-url", handleGetStreamUrl);
   app.get("/api/videos/:id/stream", handleVideoStream);
   app.get("/api/videos/:id/hls-proxy", handleHlsProxy);
+  
+  // Background refresh routes
+  app.post("/api/refresh/now", handleRefreshNow);
+  app.get("/api/refresh/status", handleRefreshStatus);
+
+  // Start background refresh on server startup
+  startBackgroundRefresh();
 
   return app;
 }
