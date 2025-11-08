@@ -44,7 +44,10 @@ function normalizeVideo(video: any, folderId: string): Video {
   let assetPath: string | undefined;
   if (video.poster) {
     // Remove the filename (poster.png, poster.jpg, etc.)
-    const pathWithoutFile = video.poster.replace(/\/[^/]+\.(png|jpg|jpeg|webp)$/i, "");
+    const pathWithoutFile = video.poster.replace(
+      /\/[^/]+\.(png|jpg|jpeg|webp)$/i,
+      "",
+    );
     // Extract just the path part if it's a full URL
     const match = pathWithoutFile.match(/(\/[^/]+\/[^/]+\/[^/]+)$/);
     if (match) {
@@ -85,9 +88,7 @@ async function fetchAllVideosFromFolder(
       const response = await fetchWithAuth(url);
 
       // Handle the paginated response format: { data: [...], metadata: {...} }
-      const videos = Array.isArray(response)
-        ? response
-        : response.data || [];
+      const videos = Array.isArray(response) ? response : response.data || [];
 
       const metadata = response.metadata || {};
 
@@ -97,7 +98,8 @@ async function fetchAllVideosFromFolder(
 
       // Check if there are more pages using maxPage from metadata
       const currentPage = metadata.currentPage || page;
-      const maxPage = metadata.maxPage || Math.ceil((metadata.total || 0) / perPage);
+      const maxPage =
+        metadata.maxPage || Math.ceil((metadata.total || 0) / perPage);
 
       if (!videos.length || currentPage >= maxPage) {
         break;
@@ -112,7 +114,10 @@ async function fetchAllVideosFromFolder(
     return { videos: allVideos };
   } catch (error) {
     console.error(`Error fetching videos from folder ${folderId}:`, error);
-    return { videos: allVideos, error: error instanceof Error ? error.message : "Unknown error" };
+    return {
+      videos: allVideos,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
 
@@ -292,7 +297,10 @@ export const handleGetStreamUrl: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error(`Error getting video stream URL ${req.params.id}:`, error);
     res.status(500).json({
-      error: error instanceof Error ? error.message : "Failed to get video stream URL",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to get video stream URL",
     });
   }
 };

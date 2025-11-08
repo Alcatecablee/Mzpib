@@ -17,12 +17,12 @@ export default function VideoPlayer() {
       try {
         setLoading(true);
         const response = await fetch(`/api/videos/${id}`);
-        
+
         if (!response.ok) {
           toast.error("Failed to load video");
           throw new Error("Video not found");
         }
-        
+
         const data = await response.json();
         setVideo(data);
       } catch (error) {
@@ -49,9 +49,15 @@ export default function VideoPlayer() {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        if (data.currentTime && data.currentTime > 5 && data.currentTime < video.duration - 10) {
+        if (
+          data.currentTime &&
+          data.currentTime > 5 &&
+          data.currentTime < video.duration - 10
+        ) {
           videoElement.currentTime = data.currentTime;
-          toast.info(`Resuming from ${Math.floor(data.currentTime / 60)}:${String(Math.floor(data.currentTime % 60)).padStart(2, "0")}`);
+          toast.info(
+            `Resuming from ${Math.floor(data.currentTime / 60)}:${String(Math.floor(data.currentTime % 60)).padStart(2, "0")}`,
+          );
         }
       } catch (e) {
         console.error("Error loading progress:", e);
@@ -67,7 +73,7 @@ export default function VideoPlayer() {
             currentTime: videoElement.currentTime,
             duration: video.duration,
             lastWatched: new Date().toISOString(),
-          })
+          }),
         );
       }
     };
@@ -172,9 +178,13 @@ export default function VideoPlayer() {
                     3: "Unable to decode video - format may not be supported",
                     4: "Video format is not supported by your browser",
                   };
-                  const errorMsg = errorMessages[errorCode || 0] || "Failed to load video";
+                  const errorMsg =
+                    errorMessages[errorCode || 0] || "Failed to load video";
                   setStreamError(errorMsg);
-                  console.error("Video playback error (code:" + errorCode + "):", errorMsg);
+                  console.error(
+                    "Video playback error (code:" + errorCode + "):",
+                    errorMsg,
+                  );
                   toast.error(errorMsg);
                 }}
                 onLoadedMetadata={() => {
