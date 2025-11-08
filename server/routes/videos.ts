@@ -69,6 +69,7 @@ export const handleGetVideos: RequestHandler = async (req, res) => {
           updated_at: video.updated_at,
           views: video.views,
           size: video.size,
+          folder_id: folder.id,
         });
       }
     }
