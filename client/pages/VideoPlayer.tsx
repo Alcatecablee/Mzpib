@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { Video } from "@shared/api";
-import { ArrowLeft, Play, Volume2, Maximize } from "lucide-react";
+import { ArrowLeft, Play, Volume2, Maximize, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function VideoPlayer() {
