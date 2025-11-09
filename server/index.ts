@@ -51,7 +51,7 @@ export async function createServer() {
 
   // Middleware - CORS with secure origin policy
   const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
+    ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
     : ['http://localhost:5000', 'http://127.0.0.1:5000', 'https://*.replit.dev'];
   
   app.use(cors({
