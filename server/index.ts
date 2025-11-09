@@ -63,7 +63,8 @@ export async function createServer() {
       // Check if origin matches allowed patterns
       const isAllowed = allowedOrigins.some(allowed => {
         if (allowed.includes('*')) {
-          const pattern = new RegExp('^' + allowed.replace(/\*/g, '.*') + '$');
+          // Escape dots and replace * with .* for proper regex matching
+          const pattern = new RegExp('^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$');
           return pattern.test(origin);
         }
         return origin === allowed;
@@ -72,6 +73,7 @@ export async function createServer() {
       if (isAllowed) {
         callback(null, true);
       } else {
+        console.error(`CORS blocked origin: ${origin}, allowed: ${allowedOrigins.join(', ')}`);
         callback(new Error('Not allowed by CORS'));
       }
     }
