@@ -25,6 +25,7 @@ import {
   handleDeleteFolder,
   handleRenameFolder,
 } from "./routes/folder-management";
+import { getUploadCredentials } from "./routes/upload";
 import { startBackgroundRefresh } from "./utils/background-refresh";
 
 export function createServer() {
@@ -70,6 +71,9 @@ export function createServer() {
   app.post("/api/admin/folders", handleCreateFolder);
   app.delete("/api/admin/folders/:id", handleDeleteFolder);
   app.patch("/api/admin/folders/:id", handleRenameFolder);
+
+  // Upload routes
+  app.get("/api/upload/credentials", getUploadCredentials);
 
   // Start background refresh on server startup (non-blocking)
   // Schedule it to run after a short delay to not interfere with first request
