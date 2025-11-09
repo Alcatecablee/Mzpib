@@ -141,3 +141,137 @@ shared/                   # Types used by both client & server
   - Frontend polling every 30 seconds
   - Badge display on video cards (top-left corner) and player page
   - **Note**: UPnShare realtime API endpoint currently returns errors (may require premium tier or different authentication)
+
+## Phase 4: Enhanced Player & Analytics (Nov 9, 2025)
+
+### Enhanced Video Player Controls ✅
+**Implementation:** UPnShare iframe API integration with postMessage communication
+
+**Player Controls:**
+- Full iframe API control: play, pause, seek, volume, mute/unmute
+- Interactive seek bar with click-to-seek and progress tracking
+- Volume slider with visual feedback
+- Playback speed selector (0.25x - 2x) - UI only, API support pending
+- Picture-in-picture button (browser/iframe limitations apply)
+- Auto-hide controls on inactivity with smooth transitions
+- Time display and real-time status synchronization
+
+**Technical Details:**
+- Bi-directional postMessage communication with UPnShare iframe
+- Player URL format: `?api=all` parameter enables API commands
+- Status messages: Ready, Playing, Paused, with duration/time data
+- 1-second polling for playback position updates
+
+### Playlist Management System ✅
+**Backend API:** `/api/playlists`
+
+**Endpoints:**
+- `POST /api/playlists` - Create playlist with name, description
+- `GET /api/playlists` - List all user playlists
+- `GET /api/playlists/:id` - Get playlist details
+- `PUT /api/playlists/:id` - Update playlist metadata
+- `DELETE /api/playlists/:id` - Delete playlist
+- `POST /api/playlists/:id/videos` - Add video to playlist
+- `DELETE /api/playlists/:id/videos/:videoId` - Remove video
+
+**Frontend UI:**
+- Create/manage playlists from video player sidebar
+- Add current video to any playlist
+- Display video count and metadata per playlist
+- Play button for playlist playback
+- Integrated with React Query for optimistic updates
+
+**Data Structure:**
+```typescript
+interface Playlist {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  videoIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+**Storage:** In-memory (prototype) - PostgreSQL recommended for production
+
+### Playback Analytics Tracking ✅
+**Backend API:** `/api/analytics`
+
+**Endpoints:**
+- `POST /api/analytics/session/start` - Initialize viewing session
+- `POST /api/analytics/session/progress` - Update watch time & events
+- `POST /api/analytics/session/end` - Finalize session
+- `GET /api/analytics/video/:videoId` - Video-level statistics
+- `GET /api/analytics/user/:userId` - User watch history
+
+**Metrics Tracked:**
+- Total watch time per video
+- Average completion rate (% of video watched)
+- Pause count and seek count (engagement metrics)
+- Unique viewers and session tracking
+- Last watched position for resume functionality
+- Session duration and timestamps
+
+**Frontend Integration:**
+- `useAnalytics` custom hook for session management
+- Automatic session start on video load
+- Progress updates every 1 second during playback
+- Event tracking for pause and seek actions (not throttled)
+- Unified updateProgress function for all analytics
+- Session cleanup on component unmount
+
+**Data Structure:**
+```typescript
+interface AnalyticsSession {
+  sessionId: string;
+  videoId: string;
+  userId: string;
+  startTime: string;
+  endTime?: string;
+  watchTime: number;
+  lastPosition: number;
+  completed: boolean;
+  pauseCount: number;
+  seekCount: number;
+}
+```
+
+**Storage:** In-memory (prototype) - PostgreSQL recommended for production
+
+### Known Limitations & TODOs
+
+**Prototype Phase Limitations:**
+1. **In-Memory Storage**: Playlists and analytics data lost on restart
+   - Production fix: Migrate to PostgreSQL with proper schemas
+2. **No Authentication**: userId from query parameter (security risk)
+   - Production fix: Implement Replit Auth or OAuth
+3. **Analytics Gaps**: Iframe-originated events not fully tracked
+   - TODO: Listen for iframe Paused/Seeked messages
+4. **Picture-in-Picture**: Cross-origin iframe restrictions
+   - Limited browser support for PiP on iframes
+5. **Playback Speed**: UPnShare API support unconfirmed
+   - Current implementation is UI indication only
+
+**Architecture TODOs:**
+- Refactor analytics interval to avoid state dependency issues
+- Add IndexedDB fallback for offline analytics queue
+- Implement keyboard shortcuts documentation panel
+- Add chapter markers for long-form videos
+- Create analytics dashboard with charts and trends
+
+### Files Added/Modified (Phase 4)
+**Backend:**
+- `server/routes/playlist.ts` - Playlist CRUD API
+- `server/routes/analytics.ts` - Analytics tracking API
+- `server/index.ts` - Route registration
+
+**Frontend:**
+- `client/hooks/use-analytics.ts` - Analytics session hook
+- `client/components/PlaylistManager.tsx` - Playlist UI
+- `client/components/VideoPlayerControls.tsx` - Enhanced controls
+- `client/pages/VideoPlayer.tsx` - Player integration
+
+**Documentation:**
+- `PHASE_4_SUMMARY.md` - Detailed implementation summary
