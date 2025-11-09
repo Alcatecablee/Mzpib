@@ -15,6 +15,8 @@ import VideosManagement from "./pages/admin/Videos";
 import Folders from "./pages/admin/Folders";
 import Uploads from "./pages/admin/Uploads";
 import Placeholder from "./pages/admin/Placeholder";
+import Analytics from "./pages/admin/Analytics";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -34,8 +36,8 @@ const App = () => (
             <Route path="videos" element={<VideosManagement />} />
             <Route path="folders" element={<Folders />} />
             <Route path="uploads" element={<Uploads />} />
-            <Route path="analytics" element={<Placeholder title="Analytics" description="Advanced analytics and insights" />} />
-            <Route path="settings" element={<Placeholder title="Settings" description="Admin settings and configuration" />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

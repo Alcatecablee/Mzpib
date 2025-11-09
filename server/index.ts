@@ -41,6 +41,10 @@ import {
   getVideoAnalytics,
   getEngagementHeatmap,
 } from "./routes/analytics";
+import {
+  getAnalyticsOverview,
+  getStorageAnalytics,
+} from "./routes/admin-analytics";
 import { startBackgroundRefresh } from "./utils/background-refresh";
 import { initializeDatabase } from "./utils/database";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -149,6 +153,10 @@ export async function createServer() {
   app.post("/api/analytics/session/end", endSession);
   app.get("/api/analytics/video/:videoId", getVideoAnalytics);
   app.get("/api/analytics/video/:videoId/heatmap", getEngagementHeatmap);
+  
+  // Admin analytics routes - Protected with authentication
+  app.get("/api/admin/analytics/overview", isAuthenticated, getAnalyticsOverview);
+  app.get("/api/admin/analytics/storage", isAuthenticated, getStorageAnalytics);
 
   // Initialize database schemas on server startup
   initializeDatabase().catch((error) => {
