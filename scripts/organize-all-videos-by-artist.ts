@@ -26,7 +26,10 @@ const KNOWN_ARTISTS = [
   "Pipipiper",
   "Hailee Starr",
   "Premlly Prem",
+  "Premly Prem",
   "Kira",
+  "Nynylew",
+  "Charlotte Lavish",
 ];
 
 // Common artist name patterns and aliases
@@ -37,6 +40,7 @@ const ARTIST_ALIASES: Record<string, string> = {
   "simplypiper": "Simplypiiper",
   "pipipiper13": "Pipipiper",
   "pipipiper": "Pipipiper",
+  "premlly prem": "Premly Prem",
 };
 
 async function fetchWithAuth(url: string) {
@@ -138,7 +142,36 @@ function extractAllArtistNames(title: string): string[] {
   return artists;
 }
 
+function isUnrenamedVideo(title: string): boolean {
+  // Check for short names (less than 15 characters, likely codes)
+  if (title.length < 15) {
+    return true;
+  }
+  
+  // Check for hexadecimal or code-like patterns
+  // Examples: 0_ee52c60e2a7d7563a71c776d946336c0.mp4, BrjMntK.mp4
+  const codePatterns = [
+    /^[0-9a-f]{7,}\.mp4$/i,  // Long hex strings
+    /^[0-9]+_[0-9a-f]{10,}/i, // Pattern like 0_ee52c60e...
+    /^[a-z]{5,10}\.mp4$/i,    // Short random letters like BrjMntK.mp4
+    /^[A-Z]{5,10}\.mp4$/,     // Short uppercase random letters
+  ];
+  
+  for (const pattern of codePatterns) {
+    if (pattern.test(title.trim())) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 function extractArtistName(title: string): string | null {
+  // First check if this is an unrenamed video
+  if (isUnrenamedVideo(title)) {
+    return null; // Send to manual review
+  }
+  
   const artists = extractAllArtistNames(title);
   return artists.length > 0 ? artists[0] : null;
 }
